@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PikPak Manager v2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+<style>
+:root{
+  --bg:#0f0c1a;--bg2:#15112a;--bg3:#1e1836;--card:#1c1733;
+  --border:#2e2650;--text:#e2e8f0;--muted:#94a3b8;
+  --purple:#7c3aed;--purple-l:#a855f7;--blue:#2563eb;--blue-l:#60a5fa;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.25rem;height:52px;display:flex;align-items:center;gap:1rem;flex-shrink:0;}
+.logo{font-weight:800;font-size:1rem;background:linear-gradient(90deg,var(--purple-l),var(--blue-l));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-right:auto;}
+.ntab{padding:6px 14px;border-radius:8px;font-size:.82rem;cursor:pointer;color:var(--muted);border:1px solid transparent;transition:.2s;}
+.ntab.on{background:linear-gradient(135deg,rgba(124,58,237,.25),rgba(37,99,235,.15));color:var(--text);border-color:rgba(124,58,237,.35);}
+.ntab:hover:not(.on){background:var(--bg3);}
+.layout{flex:1;display:flex;overflow:hidden;}
+.sidebar{width:240px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+.content{flex:1;overflow-y:auto;padding:1.25rem;}
+.s-sec{padding:.75rem 1rem .25rem;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);}
+.s-item{padding:.6rem 1rem;font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:.6rem;color:var(--muted);border-left:2px solid transparent;}
+.s-item:hover{background:var(--bg3);color:var(--text);}
+.s-item.on{background:rgba(124,58,237,.15);color:var(--purple-l);border-left-color:var(--purple-l);}
+.s-foot{margin-top:auto;padding:.75rem 1rem;border-top:1px solid var(--border);font-size:.72rem;color:var(--muted);}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;margin-right:4px;}
+.dot.on{background:var(--green);}
+.panel{display:none;}.panel.on{display:block;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem;}
+.card h3{font-size:.9rem;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem;}
+.row{display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center;}
+.inp{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.82rem;color:var(--text);outline:none;flex:1;min-width:0;}
+.inp:focus{border-color:var(--purple);}
+.btn{padding:8px 16px;border-radius:8px;font-size:.82rem;cursor:pointer;border:none;font-weight:600;transition:.2s;}
+.btn-sm{padding:5px 10px;font-size:.76rem;}
+.btn-p{background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;}
+.btn-p:hover{opacity:.88;}
+.btn-s{background:var(--bg3);color:var(--text);border:1px solid var(--border);}
+.btn-s:hover{border-color:var(--purple);}
+.btn-g{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.btn-r{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.alert{padding:.6rem .9rem;border-radius:8px;font-size:.8rem;margin-bottom:.75rem;}
+.alert-i{background:rgba(37,99,235,.12);border:1px solid rgba(37,99,235,.3);color:var(--blue-l);}
+.alert-w{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--yellow);}
+.alert-e{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:var(--red);}
+.alert-ok{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+.tabs{display:flex;gap:.25rem;margin-bottom:.75rem;border-bottom:1px solid var(--border);}
+.tab{padding:6px 14px;font-size:.8rem;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tab.on{color:var(--purple-l);border-bottom-color:var(--purple-l);}
+.file-grid{display:grid;gap:.5rem;}
+.fi{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.6rem .9rem;display:flex;align-items:center;gap:.6rem;}
+.fi:hover{border-color:var(--purple);}
+.fi-icon{font-size:1.2rem;flex-shrink:0;}
+.fi-name{flex:1;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fi-size{font-size:.72rem;color:var(--muted);flex-shrink:0;}
+.fi-acts{display:flex;gap:.35rem;flex-shrink:0;}
+.bc{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;margin-bottom:1rem;font-size:.8rem;}
+.bc span{color:var(--muted);cursor:pointer;}.bc span:hover{color:var(--text);}
+.bc-sep{color:var(--border);}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--purple-l);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:4px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:100;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.5rem;max-width:700px;width:90%;max-height:85vh;overflow-y:auto;}
+.modal h3{font-size:.95rem;font-weight:700;margin-bottom:1rem;}
+video{width:100%;border-radius:8px;background:#000;}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">☁ PikPak Manager v2</div>
+  <div class="ntab on" id="nt-cloud" onclick="goTab('cloud')">☁ Nuvem</div>
+  <div class="ntab" id="nt-share" onclick="goTab('share')">🔗 Compartilhado</div>
+  <div class="ntab" id="nt-dropbox" onclick="goTab('dropbox')">📤 Dropbox</div>
+  <div class="ntab" id="nt-cfg" onclick="goTab('cfg')">⚙️ Config</div>
+</nav>
+<div class="layout">
+  <div class="sidebar">
+    <div class="s-sec">Conta</div>
+    <div class="s-item on" id="si-login" onclick="goSide('login')">🔐 Login</div>
+    <div class="s-sec">Status</div>
+    <div class="s-item" id="si-status"><span class="dot" id="dot"></span><span id="status-txt">Desconectado</span></div>
+    <div class="s-item btn-r" id="si-logout" onclick="logout()" style="display:none">🚪 Sair</div>
+    <div class="s-foot">
+      <div id="proxy-ind" style="color:var(--muted);font-size:.7rem;">Proxy: <span id="proxy-lbl">Railway</span></div>
+      <div style="font-size:.7rem;color:var(--border);margin-top:2px;">Tokens no browser</div>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- LOGIN -->
+    <div class="panel on" id="panel-login">
+      <div class="card">
+        <h3>🔐 Login PikPak</h3>
+        <div class="tabs">
+          <div class="tab on" id="lt-token" onclick="goLoginTab('token')">Access Token</div>
+          <div class="tab" id="lt-pass" onclick="goLoginTab('pass')">Email & Senha</div>
+        </div>
+        <div id="lp-token">
+          <div class="alert alert-i">💡 Abra <strong>mypikpak.com</strong> → F12 → Network → clique numa pasta → copie o header <code>Authorization: Bearer eyJ...</code></div>
+          <div class="row"><input class="inp" id="inp-token" placeholder="Bearer eyJ... ou só o token"/></div>
+          <div class="row">
+            <button class="btn btn-p" onclick="loginToken()">Entrar com Token</button>
+            <button class="btn btn-s" onclick="loginForce()">Salvar sem validar</button>
+          </div>
+        </div>
+        <div id="lp-pass" style="display:none">
+          <div class="alert alert-w">⚠️ Login senha requer captcha manual. Prefira Access Token.</div>
+          <div class="row"><input class="inp" id="inp-email" type="email" placeholder="Email"/></div>
+          <div class="row"><input class="inp" id="inp-pw" type="password" placeholder="Senha"/></div>
+          <div id="captcha-box" style="display:none" class="alert alert-w">
+            <p style="margin-bottom:.5rem">🧩 Complete o captcha:</p>
+            <a id="captcha-link" href="#" target="_blank" style="font-size:.82rem">🔗 Abrir Captcha</a><br/><br/>
+            <button class="btn btn-s btn-sm" onclick="loginPassRetry()">✅ Já verifiquei</button>
+          </div>
+          <div id="otp-box" style="display:none" class="alert alert-w">
+            <p style="margin-bottom:.5rem">📧 Código enviado para o seu e-mail:</p>
+            <div class="row"><input class="inp" id="inp-otp" placeholder="Código de 6 dígitos" maxlength="6" style="letter-spacing:.2rem;font-size:1.1rem;text-align:center;max-width:180px"/></div>
+            <button class="btn btn-p btn-sm" onclick="loginOtp()">✅ Verificar</button>
+          </div>
+          <div class="row"><button class="btn btn-p" onclick="loginPass()">Entrar</button></div>
+        </div>
+        <div id="login-msg" style="margin-top:.5rem"></div>
+      </div>
+      <div class="card" id="session-card" style="display:none">
+        <h3>⚡ Sessão Salva</h3>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">Sessão anterior detectada.</p>
+        <button class="btn btn-p" onclick="autoLogin()">Reconectar</button>
+      </div>
+    </div>
+
+    <!-- CLOUD -->
+    <div class="panel" id="panel-cloud">
+      <div id="breadcrumb" class="bc"></div>
+      <div class="row" style="margin-bottom:1rem">
+        <button class="btn btn-p btn-sm" onclick="listFiles()">🔄 Atualizar</button>
+        <button class="btn btn-g btn-sm" onclick="selAll()">☑ Selecionar Tudo</button>
+        <button class="btn btn-s btn-sm" id="btn-dbx-sel" onclick="sendSelDropbox()" style="display:none">📤 → Dropbox</button>
+        <span id="cloud-count" style="font-size:.78rem;color:var(--muted);margin-left:auto"></span>
+      </div>
+      <div id="cloud-msg"></div>
+      <div id="file-list" class="file-grid"></div>
+      <div style="text-align:center;margin-top:1rem">
+        <button class="btn btn-s btn-sm" id="btn-more" onclick="loadMore()" style="display:none">Carregar mais...</button>
+      </div>
+    </div>
+
+    <!-- SHARE -->
+    <div class="panel" id="panel-share">
+      <div class="card">
+        <h3>🔗 Links de Compartilhamento</h3>
+        <div class="row">
+          <input class="inp" id="inp-share" placeholder="https://mypikpak.com/s/..."/>
+          <input class="inp" id="inp-pass" placeholder="Código (se houver)" style="max-width:140px"/>
+        </div>
+        <div class="row"><button class="btn btn-p" onclick="extractShare()">Extrair Links</button></div>
+        <div id="share-msg"></div>
+      </div>
+      <div id="share-results" style="display:none">
+        <div class="row" style="margin-bottom:.75rem">
+          <strong id="share-count" style="font-size:.85rem"></strong>
+          <button class="btn btn-s btn-sm" onclick="copyAllLinks()">📋 Copiar Todos</button>
+          <button class="btn btn-g btn-sm" id="btn-share-dbx" onclick="sendShareDropbox()" style="display:none">📤 → Dropbox</button>
+        </div>
+        <div id="share-list" class="file-grid"></div>
+      </div>
+    </div>
+
+    <!-- DROPBOX -->
+    <div class="panel" id="panel-dropbox">
+      <div class="card">
+        <h3>📤 Dropbox</h3>
+        <div class="row"><input class="inp" id="inp-dbx-token" placeholder="Token Dropbox" type="password"/></div>
+        <div class="row">
+          <input class="inp" id="inp-dbx-folder" placeholder="/PikPak" value="/PikPak" style="max-width:180px"/>
+          <button class="btn btn-p" onclick="testDropbox()">Testar</button>
+          <button class="btn btn-s" onclick="saveDropbox()">💾 Salvar</button>
+        </div>
+        <div id="dbx-msg"></div>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="panel" id="panel-cfg">
+      <div class="card">
+        <h3>⚙️ Proxy (Railway)</h3>
+        <p style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem">
+          URL do seu deploy Railway (ou deixe em branco para usar o padrão).<br/>
+          Padrão: <code style="color:var(--blue-l)">https://pikpak-manager-v2-production.up.railway.app</code>
+        </p>
+        <div class="row">
+          <input class="inp" id="inp-proxy" placeholder="https://seu-app.up.railway.app"/>
+          <button class="btn btn-p" onclick="saveProxy()">💾 Salvar</button>
+          <button class="btn btn-s" onclick="clearProxy()">🗑 Limpar</button>
+        </div>
+        <div class="row"><button class="btn btn-s btn-sm" onclick="testProxy()">🔌 Testar Proxy</button></div>
+        <div id="proxy-msg"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- VIDEO MODAL -->
+<div id="player-modal" class="modal-bg" style="display:none" onclick="closePl(event)">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+      <h3 id="player-title" style="font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80%"></h3>
+      <button class="btn btn-s btn-sm" onclick="closePl()">✕</button>
+    </div>
+    <video id="player-video" controls></video>
+    <div id="player-quals" style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.5rem"></div>
+  </div>
+</div>
+
+<script>
+// ===================== CONFIG =====================
+const RAILWAY_DEFAULT = 'https://pikpak-manager-v2-production.up.railway.app';
+function getProxy() {
+  return (localStorage.getItem('proxy_v2') || '').replace(/\/$/, '') || RAILWAY_DEFAULT;
+}
+
+// ===================== API ========================
+async function api(path, opts={}) {
+  const base = getProxy();
+  const url = base + path;
+  const res = await fetch(url, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  return res;
+}
+async function apiJson(path, body=null) {
+  const opts = body ? { method: 'POST', body } : { method: 'GET' };
+  const r = await api(path, opts);
+  const d = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+  return d;
+}
+
+// ===================== STATE =====================
+const S = {
+  token: '', refresh: '', userId: '',
+  deviceId: (() => {
+    let d = localStorage.getItem('pk_did');
+    if (!d) { d = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join(''); localStorage.setItem('pk_did',d); }
+    return d;
+  })(),
+  dbxToken: '', dbxFolder: '/PikPak',
+  folderStack: [{id:'',name:'☁ Raiz'}],
+  nextPage: '', allFiles: [],
+  shareFiles: [], shareId: '', shareToken: '',
+  pendingCaptcha: null,
+  pendingOtp: null,
+};
+
+function loadLocal() {
+  try {
+    const d = JSON.parse(localStorage.getItem('pk_tokens') || '{}');
+    S.token = d.access_token || ''; S.refresh = d.refresh_token || ''; S.userId = d.user_id || '';
+  } catch(e){}
+  S.dbxToken = localStorage.getItem('pk_dbx') || '';
+  S.dbxFolder = localStorage.getItem('pk_dbx_folder') || '/PikPak';
+  if (document.getElementById('inp-dbx-token')) document.getElementById('inp-dbx-token').value = S.dbxToken;
+  if (document.getElementById('inp-dbx-folder')) document.getElementById('inp-dbx-folder').value = S.dbxFolder;
+}
+function saveLocal() {
+  localStorage.setItem('pk_tokens', JSON.stringify({access_token:S.token,refresh_token:S.refresh,user_id:S.userId}));
+}
+
+// ===================== UI HELPERS ================
+function msg(id, type, html) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const cls = {ok:'alert-ok',e:'alert-e',w:'alert-w',i:'alert-i'}[type] || 'alert-i';
+  el.innerHTML = `<div class="alert ${cls}">${html}</div>`;
+}
+function cls(id) { const el=document.getElementById(id); if(el) el.innerHTML=''; }
+function fmt(bytes) {
+  if (!bytes) return ''; bytes=+bytes;
+  if (bytes>1e9) return (bytes/1e9).toFixed(1)+'GB';
+  if (bytes>1e6) return (bytes/1e6).toFixed(1)+'MB';
+  if (bytes>1e3) return (bytes/1e3).toFixed(0)+'KB';
+  return bytes+'B';
+}
+function esc(s) { return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function isVideo(name,mime) {
+  if (mime && mime.startsWith('video/')) return true;
+  return /\.(mp4|mkv|avi|mov|webm|m4v|flv|ts|m2ts)$/i.test(name||'');
+}
+function fileIcon(name,mime) {
+  if (mime && mime.startsWith('video/') || isVideo(name)) return '🎬';
+  if (mime && mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(name||'')) return '🖼️';
+  if (/\.(zip|rar|7z|tar|gz)$/i.test(name||'')) return '🗜️';
+  if (/\.(pdf)$/i.test(name||'')) return '📄';
+  if (/\.(mp3|aac|flac|ogg|wav)$/i.test(name||'')) return '🎵';
+  return '📁';
+}
+
+// ===================== NAV =======================
+function goTab(t) {
+  ['cloud','share','dropbox','cfg'].forEach(x => {
+    document.getElementById('nt-'+x)?.classList.toggle('on', x===t);
+    document.getElementById('panel-'+(x==='dropbox'?'dropbox':x==='cfg'?'cfg':x==='share'?'share':x==='cloud'?'cloud':x))?.classList.toggle('on', x===t);
+  });
+  if (t==='cloud' && S.token) listFiles();
+}
+function goSide(s) {
+  document.querySelectorAll('.s-item').forEach(el=>el.classList.remove('on'));
+  document.getElementById('si-'+s)?.classList.add('on');
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('on'));
+  document.getElementById('panel-'+s)?.classList.add('on');
+}
+
+// ===================== LOGIN =====================
+function goLoginTab(t) {
+  document.getElementById('lt-token')?.classList.toggle('on',t==='token');
+  document.getElementById('lt-pass')?.classList.toggle('on',t==='pass');
+  document.getElementById('lp-token').style.display = t==='token'?'':'none';
+  document.getElementById('lp-pass').style.display = t==='pass'?'':'none';
+}
+async function loginToken() {
+  let t = document.getElementById('inp-token').value.trim();
+  if (!t) return msg('login-msg','e','Token vazio');
+  if (t.toLowerCase().startsWith('bearer ')) t = t.slice(7).trim();
+  t = t.replace(/^["']|["']$/g,'').trim();
+  msg('login-msg','i','<span class="spin"></span> Validando...');
+  try {
+    await apiJson('/api/login', {method:'token',access_token:t,device_id:S.deviceId});
+    S.token = t; saveLocal(); onLogin(); msg('login-msg','ok','✅ Login OK!');
+  } catch(e) { msg('login-msg','e',e.message); }
+}
+async function loginForce() {
+  let t = document.getElementById('inp-token').value.trim();
+  if (!t) return msg('login-msg','e','Token vazio');
+  if (t.toLowerCase().startsWith('bearer ')) t = t.slice(7).trim();
+  t = t.replace(/^["']|["']$/g,'').trim();
+  try {
+    await apiJson('/api/login', {method:'force_token',access_token:t,device_id:S.deviceId});
+    S.token = t; saveLocal(); onLogin(); msg('login-msg','ok','✅ Salvo!');
+  } catch(e) { msg('login-msg','e',e.message); }
+}
+async function loginPass() {
+  const email = document.getElementById('inp-email').value.trim();
+  const pw = document.getElementById('inp-pw').value.trim();
+  if (!email||!pw) return msg('login-msg','e','Email e senha obrigatórios');
+  msg('login-msg','i','<span class="spin"></span> Entrando...');
+  document.getElementById('captcha-box').style.display = 'none';
+  document.getElementById('otp-box').style.display = 'none';
+  try {
+    const d = await apiJson('/api/login', {method:'password',username:email,password:pw,device_id:S.deviceId});
+    if (d.captcha_required) {
+      S.pendingCaptcha = {email, pw, captcha_token: d.captcha_token};
+      document.getElementById('captcha-link').href = d.captcha_url;
+      document.getElementById('captcha-box').style.display = '';
+      msg('login-msg','w','🧩 Complete o captcha e clique "Já verifiquei"');
+      return;
+    }
+    if (d.otp_required) {
+      S.pendingOtp = {email, pw, captcha_token: d.captcha_token, verification_id: d.verification_id};
+      document.getElementById('otp-box').style.display = '';
+      msg('login-msg','w',d.message || '📧 Insira o código enviado ao e-mail');
+      return;
+    }
+    if (d.success) { S.token=d.access_token||S.token; saveLocal(); onLogin(); msg('login-msg','ok','✅ Login OK!'); }
+  } catch(e) { msg('login-msg','e',e.message+' — Use Access Token'); }
+}
+async function loginPassRetry() {
+  if (!S.pendingCaptcha) return;
+  const {email,pw,captcha_token} = S.pendingCaptcha;
+  msg('login-msg','i','<span class="spin"></span> Tentando...');
+  try {
+    const d = await apiJson('/api/login', {method:'password_with_captcha',username:email,password:pw,captcha_token,device_id:S.deviceId});
+    if (d.otp_required) {
+      S.pendingOtp = {email,pw,captcha_token:d.captcha_token,verification_id:d.verification_id};
+      document.getElementById('otp-box').style.display='';
+      msg('login-msg','w',d.message||'📧 Insira o código');
+      return;
+    }
+    if (d.success) { S.token=d.access_token||S.token; saveLocal(); onLogin(); msg('login-msg','ok','✅ Login OK!'); }
+  } catch(e) { msg('login-msg','e',e.message); }
+}
+async function loginOtp() {
+  const code = document.getElementById('inp-otp').value.trim();
+  if (!code) return msg('login-msg','e','Insira o código');
+  if (!S.pendingOtp) return msg('login-msg','e','Sessão expirada. Faça login novamente.');
+  const {email,pw,captcha_token,verification_id} = S.pendingOtp;
+  msg('login-msg','i','<span class="spin"></span> Verificando...');
+  try {
+    const d = await apiJson('/api/login', {
+      method:'otp',username:email,password:pw,code,
+      captcha_token,verification_id,device_id:S.deviceId,
+    });
+    if (d.success) {
+      S.token = d.access_token || S.token;
+      saveLocal();
+      document.getElementById('otp-box').style.display='none';
+      S.pendingOtp = null;
+      onLogin(); msg('login-msg','ok','✅ Login OK!');
+    }
+  } catch(e) { msg('login-msg','e',e.message); }
+}
+async function autoLogin() {
+  msg('login-msg','i','<span class="spin"></span> Reconectando...');
+  try {
+    const d = await apiJson('/api/auto-login', {device_id:S.deviceId});
+    if (d.access_token) S.token = d.access_token;
+    saveLocal(); onLogin(); msg('login-msg','ok','✅ Reconectado!');
+  } catch(e) { msg('login-msg','e','Falhou: '+e.message); }
+}
+function onLogin() {
+  document.getElementById('dot').classList.add('on');
+  document.getElementById('status-txt').textContent = 'Conectado';
+  document.getElementById('si-logout').style.display = '';
+  document.getElementById('session-card').style.display = 'none';
+}
+function logout() {
+  S.token=''; S.refresh=''; S.userId=''; saveLocal();
+  document.getElementById('dot').classList.remove('on');
+  document.getElementById('status-txt').textContent = 'Desconectado';
+  document.getElementById('si-logout').style.display = 'none';
+  document.getElementById('file-list').innerHTML = '';
+  msg('login-msg','i','Deslogado');
+}
+
+// ===================== FILES =====================
+let folderStack = [{id:'',name:'☁ Raiz'}];
+let nextPage = '';
+let allFiles = [];
+
+async function listFiles(folderId) {
+  if (folderId===undefined) folderId = folderStack[folderStack.length-1].id;
+  if (!S.token) return msg('cloud-msg','e','Faça login primeiro');
+  nextPage=''; allFiles=[];
+  msg('cloud-msg','i','<span class="spin"></span> Carregando...');
+  document.getElementById('file-list').innerHTML='';
+  await fetchFiles(folderId);
+}
+async function fetchFiles(folderId) {
+  try {
+    let url = `/api/files?parent_id=${encodeURIComponent(folderId||'')}`;
+    if (nextPage) url += `&page_token=${encodeURIComponent(nextPage)}`;
+    const r = await api(url);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||`HTTP ${r.status}`);
+    cls('cloud-msg');
+    nextPage = d.next_page_token || '';
+    const files = d.files || [];
+    allFiles = [...allFiles, ...files];
+    renderFiles(allFiles, folderId);
+  } catch(e) { msg('cloud-msg','e',e.message); }
+}
+function renderFiles(files, folderId) {
+  updateBc();
+  const el = document.getElementById('file-list');
+  el.innerHTML = '';
+  document.getElementById('cloud-count').textContent = `${files.length} itens`;
+  document.getElementById('btn-more').style.display = nextPage ? '' : 'none';
+  files.forEach(f => {
+    const isDir = f.kind?.includes('folder') || f.kind?.includes('collection');
+    const div = document.createElement('div');
+    div.className = 'fi';
+    div.innerHTML = `
+      <span class="fi-icon">${isDir?'📁':fileIcon(f.name,f.mime_type)}</span>
+      <span class="fi-name" title="${esc(f.name)}">${esc(f.name)}</span>
+      <span class="fi-size">${fmt(f.size)}</span>
+      <span class="fi-acts">
+        ${isDir
+          ? `<button class="btn btn-s btn-sm" onclick="openFolder('${esc(f.id)}','${esc(f.name)}')">📂 Abrir</button>`
+          : `${isVideo(f.name,f.mime_type)?`<button class="btn btn-g btn-sm" onclick="playFile('${esc(f.id)}','${esc(f.name)}')">▶ Play</button>`:''}<button class="btn btn-s btn-sm" onclick="getLink('${esc(f.id)}','${esc(f.name)}')">⬇ Link</button>`
+        }
+      </span>`;
+    el.appendChild(div);
+  });
+}
+function openFolder(id, name) {
+  folderStack.push({id,name});
+  listFiles(id);
+}
+function navTo(idx) {
+  folderStack = folderStack.slice(0,idx+1);
+  listFiles(folderStack[folderStack.length-1].id);
+}
+function updateBc() {
+  const el = document.getElementById('breadcrumb');
+  el.innerHTML = folderStack.map((f,i) =>
+    `<span onclick="navTo(${i})">${esc(f.name)}</span>${i<folderStack.length-1?'<span class="bc-sep">›</span>':''}`
+  ).join('');
+}
+async function loadMore() {
+  await fetchFiles(folderStack[folderStack.length-1].id);
+}
+async function getLink(id, name) {
+  try {
+    const d = await apiJson(`/api/file-link?file_id=${encodeURIComponent(id)}`);
+    const medias = d.medias || [];
+    if (!medias.length) return alert('Nenhum link disponível (arquivo ainda processando?)');
+    const links = medias.map(m => m.link?.url || '').filter(Boolean);
+    if (links.length) {
+      await navigator.clipboard.writeText(links[0]).catch(()=>{});
+      alert(`Link copiado!\n${links[0].substring(0,80)}...`);
+    } else alert('Nenhum link de download encontrado');
+  } catch(e) { alert('Erro: '+e.message); }
+}
+async function playFile(id, name) {
+  try {
+    const d = await apiJson(`/api/file-link?file_id=${encodeURIComponent(id)}`);
+    const medias = d.medias || [];
+    const urls = medias.map(m=>m.link?.url||'').filter(Boolean);
+    if (!urls.length) return alert('Nenhum link de vídeo disponível');
+    openPlayer(urls[0], name, urls);
+  } catch(e) { alert('Erro: '+e.message); }
+}
+function selAll() {
+  // placeholder for multi-select Dropbox
+  alert('Selecione arquivos individualmente com "→ Dropbox" em cada item');
+}
+function sendSelDropbox() { alert('Selecione arquivos via botão individual'); }
+
+// ===================== SHARE =====================
+async function extractShare() {
+  const url = document.getElementById('inp-share').value.trim();
+  const pass = document.getElementById('inp-pass').value.trim();
+  if (!url) return msg('share-msg','e','URL obrigatória');
+  msg('share-msg','i','<span class="spin"></span> Extraindo...');
+  document.getElementById('share-results').style.display='none';
+  try {
+    const d = await apiJson('/api/share', {url,passcode:pass});
+    S.shareId = d.share_id; S.shareToken = d.share_token; S.shareFiles = d.files||[];
+    cls('share-msg');
+    renderShare(S.shareFiles);
+  } catch(e) { msg('share-msg','e',e.message); }
+}
+function renderShare(files) {
+  document.getElementById('share-count').textContent = `${files.length} arquivo(s)`;
+  document.getElementById('btn-share-dbx').style.display = S.dbxToken ? '' : 'none';
+  document.getElementById('share-results').style.display='';
+  const el = document.getElementById('share-list');
+  el.innerHTML='';
+  files.forEach((f,i) => {
+    const links = (f.links||[]).map(m=>m.link?.url||'').filter(Boolean);
+    const url = links[0]||'';
+    const div = document.createElement('div');
+    div.className='fi';
+    div.innerHTML=`
+      <span class="fi-icon">${fileIcon(f.name,f.mime)}</span>
+      <span class="fi-name" title="${esc(f.name)}">${esc(f.name)}</span>
+      <span class="fi-size">${fmt(f.size)}</span>
+      <span class="fi-acts">
+        ${url?`<button class="btn btn-s btn-sm" onclick="copyLink('${esc(url)}')">📋 Copiar</button>`:'<span style=\"color:var(--muted);font-size:.75rem\">processando</span>'}
+        ${url&&S.dbxToken?`<button class="btn btn-g btn-sm" onclick="sendOneDropbox('${esc(url)}','${esc(f.name)}')">📤 Dropbox</button>`:''}
+        ${url&&isVideo(f.name,f.mime)?`<button class="btn btn-g btn-sm" onclick="openPlayer('${esc(url)}','${esc(f.name)}',['${esc(url)}'])">▶ Play</button>`:''}
+      </span>`;
+    el.appendChild(div);
+  });
+}
+async function copyLink(url) {
+  await navigator.clipboard.writeText(url).catch(()=>{});
+  alert('Copiado!');
+}
+async function copyAllLinks() {
+  const links = S.shareFiles.flatMap(f=>(f.links||[]).map(m=>m.link?.url||'').filter(Boolean));
+  if (!links.length) return alert('Nenhum link disponível');
+  await navigator.clipboard.writeText(links.join('\n')).catch(()=>{});
+  alert(`${links.length} link(s) copiado(s)!`);
+}
+
+// ===================== DROPBOX ===================
+function saveDropbox() {
+  S.dbxToken = document.getElementById('inp-dbx-token').value.trim();
+  S.dbxFolder = document.getElementById('inp-dbx-folder').value.trim()||'/PikPak';
+  localStorage.setItem('pk_dbx', S.dbxToken);
+  localStorage.setItem('pk_dbx_folder', S.dbxFolder);
+  msg('dbx-msg','ok','Salvo!');
+}
+async function testDropbox() {
+  const t = document.getElementById('inp-dbx-token').value.trim();
+  if (!t) return msg('dbx-msg','e','Token vazio');
+  msg('dbx-msg','i','<span class="spin"></span> Testando...');
+  try {
+    const d = await apiJson('/api/dropbox-test',{token:t});
+    msg('dbx-msg','ok',`✅ Conectado como: ${d.name}`);
+  } catch(e) { msg('dbx-msg','e',e.message); }
+}
+async function sendOneDropbox(url, name) {
+  if (!S.dbxToken) return alert('Configure o Dropbox primeiro');
+  const btn = event.target; btn.disabled=true; btn.textContent='⏳';
+  try {
+    await apiJson('/api/dropbox-send',{token:S.dbxToken,folder:S.dbxFolder,url,name});
+    btn.textContent='✅';
+  } catch(e) { btn.disabled=false; btn.textContent='📤'; alert('Erro: '+e.message); }
+}
+async function sendShareDropbox() {
+  if (!S.dbxToken) return alert('Configure o Dropbox primeiro');
+  const files = S.shareFiles.filter(f=>{
+    const u = (f.links||[]).map(m=>m.link?.url||'').filter(Boolean)[0];
+    return !!u;
+  });
+  if (!files.length) return alert('Nenhum link disponível');
+  let ok=0,fail=0;
+  for (const f of files) {
+    const url = (f.links||[]).map(m=>m.link?.url||'').filter(Boolean)[0];
+    try {
+      await apiJson('/api/dropbox-send',{token:S.dbxToken,folder:S.dbxFolder,url,name:f.name});
+      ok++;
+    } catch(e) { fail++; }
+  }
+  alert(`Enviado: ${ok} OK, ${fail} falha(s)`);
+}
+
+// ===================== PLAYER ====================
+let hlsPlayer = null;
+function openPlayer(url, name, allUrls=[]) {
+  document.getElementById('player-title').textContent = name;
+  const video = document.getElementById('player-video');
+  if (hlsPlayer) { hlsPlayer.destroy(); hlsPlayer=null; }
+  video.src='';
+  // Quality buttons
+  const qel = document.getElementById('player-quals');
+  qel.innerHTML = allUrls.length>1 ? allUrls.map((u,i)=>`<button class="btn btn-s btn-sm" onclick="setQual('${esc(u)}')">${i===0?'Alta':'Baixa'}</button>`).join('') : '';
+  loadVideoUrl(url, video);
+  document.getElementById('player-modal').style.display='flex';
+}
+function loadVideoUrl(url, video) {
+  if (!video) video = document.getElementById('player-video');
+  if (Hls.isSupported() && (url.includes('.m3u8') || url.includes('hls'))) {
+    hlsPlayer = new Hls();
+    hlsPlayer.loadSource(url);
+    hlsPlayer.attachMedia(video);
+    hlsPlayer.on(Hls.Events.MANIFEST_PARSED, ()=>video.play().catch(()=>{}));
+  } else {
+    video.src = url;
+    video.play().catch(()=>{});
+  }
+}
+function setQual(url) { loadVideoUrl(url); }
+function closePl(e) {
+  if (e && e.target !== document.getElementById('player-modal')) return;
+  const video = document.getElementById('player-video');
+  video.pause(); video.src='';
+  if (hlsPlayer) { hlsPlayer.destroy(); hlsPlayer=null; }
+  document.getElementById('player-modal').style.display='none';
+}
+
+// ===================== PROXY =====================
+function saveProxy() {
+  const v = document.getElementById('inp-proxy').value.trim();
+  localStorage.setItem('proxy_v2', v);
+  document.getElementById('proxy-lbl').textContent = v ? new URL(v).hostname : 'Railway';
+  msg('proxy-msg','ok','Salvo!');
+}
+function clearProxy() {
+  localStorage.removeItem('proxy_v2');
+  document.getElementById('inp-proxy').value='';
+  document.getElementById('proxy-lbl').textContent='Railway';
+  msg('proxy-msg','ok','Limpo - usando padrão Railway');
+}
+async function testProxy() {
+  msg('proxy-msg','i','<span class="spin"></span> Testando...');
+  try {
+    const r = await fetch(getProxy()+'/', {method:'GET',mode:'cors'});
+    msg('proxy-msg','ok',`✅ Proxy OK (HTTP ${r.status})`);
+  } catch(e) { msg('proxy-msg','e','Falhou: '+e.message); }
+}
+
+// ===================== INIT ======================
+function init() {
+  loadLocal();
+  // Proxy input
+  const pv = localStorage.getItem('proxy_v2')||'';
+  if (pv) document.getElementById('inp-proxy').value = pv;
+  document.getElementById('proxy-lbl').textContent = pv ? new URL(pv).hostname : 'Railway';
+  // Show session if has token
+  if (S.token) { onLogin(); document.getElementById('session-card').style.display=''; }
+  else if (S.refresh) { document.getElementById('session-card').style.display=''; }
+}
+init();
+</script>
+</body>
+</html>
