@@ -41,7 +41,8 @@ ALGORITHMS = [
 API_USER  = "https://user.mypikpak.net"
 API_DRIVE = "https://api-drive.mypikpak.net"
 
-TMPDIR = os.environ.get("TMPDIR", "/tmp")
+import tempfile as _tempfile
+TMPDIR = _tempfile.gettempdir()
 
 # ── Device ID ─────────────────────────────────────────────────────────────
 def get_device_id():
