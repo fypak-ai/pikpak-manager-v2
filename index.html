@@ -76,7 +76,6 @@ video{width:100%;border-radius:8px;background:#000;}
   <div class="ntab on" id="nt-cloud" onclick="goTab('cloud')">☁ Nuvem</div>
   <div class="ntab" id="nt-share" onclick="goTab('share')">🔗 Compartilhado</div>
   <div class="ntab" id="nt-dropbox" onclick="goTab('dropbox')">📤 Dropbox</div>
-  <div class="ntab" id="nt-cfg" onclick="goTab('cfg')">⚙️ Config</div>
 </nav>
 <div class="layout">
   <div class="sidebar">
@@ -86,7 +85,6 @@ video{width:100%;border-radius:8px;background:#000;}
     <div class="s-item" id="si-status"><span class="dot" id="dot"></span><span id="status-txt">Desconectado</span></div>
     <div class="s-item btn-r" id="si-logout" onclick="logout()" style="display:none">🚪 Sair</div>
     <div class="s-foot">
-      <div id="proxy-ind" style="color:var(--muted);font-size:.7rem;">Proxy: <span id="proxy-lbl">Railway</span></div>
       <div style="font-size:.7rem;color:var(--border);margin-top:2px;">Tokens no browser</div>
     </div>
   </div>
@@ -184,23 +182,7 @@ video{width:100%;border-radius:8px;background:#000;}
       </div>
     </div>
 
-    <!-- CONFIG -->
-    <div class="panel" id="panel-cfg">
-      <div class="card">
-        <h3>⚙️ Proxy (Railway)</h3>
-        <p style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem">
-          URL do seu deploy Railway (ou deixe em branco para usar o padrão).<br/>
-          Padrão: <code style="color:var(--blue-l)">https://pikpak-manager-v2-production.up.railway.app</code>
-        </p>
-        <div class="row">
-          <input class="inp" id="inp-proxy" placeholder="https://seu-app.up.railway.app"/>
-          <button class="btn btn-p" onclick="saveProxy()">💾 Salvar</button>
-          <button class="btn btn-s" onclick="clearProxy()">🗑 Limpar</button>
-        </div>
-        <div class="row"><button class="btn btn-s btn-sm" onclick="testProxy()">🔌 Testar Proxy</button></div>
-        <div id="proxy-msg"></div>
-      </div>
-    </div>
+
 
   </div>
 </div>
@@ -221,7 +203,7 @@ video{width:100%;border-radius:8px;background:#000;}
 // ===================== CONFIG =====================
 const RAILWAY_DEFAULT = 'https://pikpak-manager-v2-production.up.railway.app';
 function getProxy() {
-  return (localStorage.getItem('proxy_v2') || '').replace(/\/$/, '') || RAILWAY_DEFAULT;
+  return RAILWAY_DEFAULT;
 }
 
 // ===================== API ========================
@@ -648,33 +630,10 @@ function closePl(e) {
 }
 
 // ===================== PROXY =====================
-function saveProxy() {
-  const v = document.getElementById('inp-proxy').value.trim();
-  localStorage.setItem('proxy_v2', v);
-  document.getElementById('proxy-lbl').textContent = v ? new URL(v).hostname : 'Railway';
-  msg('proxy-msg','ok','Salvo!');
-}
-function clearProxy() {
-  localStorage.removeItem('proxy_v2');
-  document.getElementById('inp-proxy').value='';
-  document.getElementById('proxy-lbl').textContent='Railway';
-  msg('proxy-msg','ok','Limpo - usando padrão Railway');
-}
-async function testProxy() {
-  msg('proxy-msg','i','<span class="spin"></span> Testando...');
-  try {
-    const r = await fetch(getProxy()+'/', {method:'GET',mode:'cors'});
-    msg('proxy-msg','ok',`✅ Proxy OK (HTTP ${r.status})`);
-  } catch(e) { msg('proxy-msg','e','Falhou: '+e.message); }
-}
 
-// ===================== INIT ======================
 function init() {
   loadLocal();
-  // Proxy input
-  const pv = localStorage.getItem('proxy_v2')||'';
-  if (pv) document.getElementById('inp-proxy').value = pv;
-  document.getElementById('proxy-lbl').textContent = pv ? new URL(pv).hostname : 'Railway';
+
   // Show session if has token
   if (S.token) { onLogin(); document.getElementById('session-card').style.display=''; }
   else if (S.refresh) { document.getElementById('session-card').style.display=''; }
